@@ -35,7 +35,7 @@ permalink: /writeups/
       <div class="writeup-card__tags">
         <span class="writeup-card__tag">{{ writeup.difficulty }}</span>
         <span class="writeup-card__tag">{{ writeup.operating_system }}</span>
-        {% for tag in writeup.tags limit:6 %}
+        {% for tag in writeup.tags %}
         <span class="writeup-card__tag">{{ tag }}</span>
         {% endfor %}
       </div>
