@@ -12,6 +12,7 @@ tags:
   - Path Traversal
   - Credenciales
   - Docker
+  - MCP Jam
 summary: "Cadena de explotación: RCE sin autenticación en MCP Jam, abuso de PrivateBin para ejecutar PHP, extracción de credenciales redactadas y escape al host a través de Arcane/Docker."
 ---
 
@@ -21,7 +22,7 @@ summary: "Cadena de explotación: RCE sin autenticación en MCP Jam, abuso de Pr
 |-------|-------|
 | Sistema operativo | Linux |
 | Dificultad | Fácil |
-| Tags | `RCE`, `LFI`, `Path Traversal`, `Reutilización de credenciales`, `Escalada de privilegios con Docker`, `CVE-2026-23744` |
+| Tags | `RCE`, `LFI`, `Path Traversal`, `Reutilización de credenciales`, `Escalada de privilegios con Docker`, `CVE-2026-23744`, `MCP Jam` |
 {: .info-table}
 
 ## Reconocimiento
