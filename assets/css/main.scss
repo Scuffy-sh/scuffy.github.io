@@ -3,257 +3,46 @@
 
 @charset "utf-8";
 
-// ==========================================================================
-// Kali Terminal Theme — sobreescritura completa del skin
-// ==========================================================================
+// Dark skin (must come before theme so the theme picks up the variable overrides)
+@import "minimal-mistakes/skins/{{ site.minimal_mistakes_skin | default: 'default' }}";
 
-// Kali palette
-$kali-bg: #0a0a0a;
-$kali-bg-card: #101010;
-$kali-bg-hover: #141414;
-$kali-green: #33ff33;
-$kali-green-bright: #00ff00;
-$kali-green-dim: #1a3a1a;
-$kali-green-border: #1a3a1a;
-$kali-cyan: #00ccff;
-$kali-text: #33ff33;
-$kali-text-dim: #1a7a1a;
-$kali-text-muted: #0d3d0d;
-$kali-highlight: #003300;
-
-// Font stack — terminal feel
-$kali-font: 'Courier New', 'Consolas', 'Liberation Mono', 'Noto Mono', monospace;
-
-// Import theme defaults (minimal — just for layout)
+// Variable overrides (must come before theme so components use the new values)
 $max-width: 1600px;
+
+// Main theme
 @import "minimal-mistakes";
 
 // ==========================================================================
-// GLOBAL OVERRIDES
+// Custom overrides
 // ==========================================================================
 
-* {
-  scrollbar-color: $kali-green-dim $kali-bg;
-}
-
-body,
-html {
-  background-color: $kali-bg !important;
-  color: $kali-text;
-  font-family: $kali-font;
-}
-
-a {
-  color: $kali-cyan;
-  &:hover {
-    color: $kali-green-bright;
-  }
-}
-
-h1, h2, h3, h4, h5, h6 {
-  color: $kali-green-bright !important;
-  font-family: $kali-font;
-}
-
-// ==========================================================================
-// SITE HEADER — terminal prompt style
-// ==========================================================================
-
-.masthead {
-  background: $kali-bg !important;
-  border-bottom: 1px solid $kali-green-dim !important;
-}
-
+// Site title — subtitle styling
 .site-title {
   display: block;
-  color: $kali-green-bright !important;
-  font-family: $kali-font;
 }
-
 .site-subtitle {
   display: block;
   font-size: 0.75em !important;
-  color: $kali-text-dim !important;
+  color: #7c7c7c !important;
   font-weight: 400 !important;
-  margin: 0.1em 0 0 0;
+  margin: 0;
   line-height: 1.2;
-  font-family: $kali-font;
 }
 
-// ==========================================================================
-// GLOBAL NAVIGATION
-// ==========================================================================
-
-.greedy-nav {
-  background: $kali-bg !important;
-}
-
-.greedy-nav a {
-  color: $kali-text !important;
-  font-family: $kali-font;
-  &:hover {
-    color: $kali-green-bright !important;
-  }
-}
-
-.greedy-nav .visible-links a::before {
-  background: $kali-green !important;
-}
-
-.nav__list .nav__item {
-  color: $kali-text;
-}
-
-// ==========================================================================
-// PAGE / CONTENT
-// ==========================================================================
-
-.page {
-  background: $kali-bg;
-}
-
-.page__inner-wrap {
-  background: $kali-bg;
-}
-
-.page__content {
-  color: $kali-text;
-  font-family: $kali-font;
-}
-
-// Headings inside content
-.page__content h1,
-.page__content h2,
-.page__content h3,
-.page__content h4 {
-  color: $kali-green-bright !important;
-}
-
-// Page title (writeup title)
-.page__title {
-  color: $kali-green-bright !important;
-  font-family: $kali-font;
-}
-
-// ==========================================================================
-// CODE BLOCKS — terminal look
-// ==========================================================================
-
-div.highlighter-rouge,
-figure.highlight {
-  background: #000 !important;
-  border: 1px solid $kali-green-dim !important;
-  border-radius: 0 !important;
-}
-
-.highlight code,
-.highlight pre {
-  background: #000 !important;
-  color: $kali-green !important;
-  font-family: $kali-font;
-  font-size: 0.85em;
-}
-
-code {
-  background: #000 !important;
-  color: $kali-green !important;
-  font-family: $kali-font;
-}
-
-pre {
-  background: #000 !important;
-  border: 1px solid $kali-green-dim;
-}
-
-// Command prompt decoration for code
-.highlight .gp { color: $kali-green-bright !important; }  // prompt
-.highlight .c1 { color: $kali-text-dim !important; }       // comments
-
-// ==========================================================================
-// LINKS AND BUTTONS
-// ==========================================================================
-
-.btn {
-  background: $kali-bg-card !important;
-  border: 1px solid $kali-green-dim !important;
-  color: $kali-text !important;
-  font-family: $kali-font;
-  &:hover {
-    background: $kali-green-dim !important;
-    color: $kali-green-bright !important;
-  }
-}
-
-// ==========================================================================
-// TABLES — info table
-// ==========================================================================
-
+// Info table — key-value style, hide thead
 .info-table thead {
   display: none;
 }
-
 .info-table {
   margin-bottom: 1em;
-  border: 1px solid $kali-green-dim;
 }
-
 .info-table td:first-child {
   font-weight: bold;
   white-space: nowrap;
   padding-right: 2em;
 }
 
-.info-table td {
-  background: $kali-bg-card !important;
-  color: $kali-text !important;
-  border: 1px solid $kali-green-dim !important;
-}
-
-table {
-  background: $kali-bg-card;
-  color: $kali-text;
-  border: 1px solid $kali-green-dim;
-}
-
-table th, table td {
-  border: 1px solid $kali-green-dim;
-}
-
-// ==========================================================================
-// PAGE META / TAXONOMY — tags in writeup
-// ==========================================================================
-
-.page__taxonomy {
-  border-top: 1px solid $kali-green-dim;
-  padding-top: 1em;
-  margin-top: 2em;
-  color: $kali-text;
-}
-
-.page__taxonomy strong {
-  color: $kali-green;
-}
-
-.page__taxonomy-item {
-  display: inline-block;
-  border: 1px solid $kali-green-dim !important;
-  border-radius: 0 !important;
-  padding: 2px 10px !important;
-  margin: 2px 4px 2px 0 !important;
-  color: $kali-text !important;
-  font-family: $kali-font;
-  font-size: 0.8em !important;
-  &:hover {
-    background: $kali-green-dim !important;
-    color: $kali-green-bright !important;
-    border-color: $kali-green !important;
-  }
-}
-
-// ==========================================================================
-// WRITEUP LISTING — cards
-// ==========================================================================
-
+// Writeup listing page — filters and items
 .writeups-filters {
   display: flex;
   gap: 0.5rem;
@@ -265,69 +54,75 @@ table th, table td {
   flex: 1;
   min-width: 150px;
   padding: 0.375rem 0.5rem;
-  border: 1px solid $kali-green-dim;
-  border-radius: 0;
+  border: 1px solid #555;
+  border-radius: 4px;
   font-size: 0.875rem;
-  background: #000 !important;
-  color: $kali-green !important;
-  font-family: $kali-font;
-  &::placeholder {
-    color: $kali-text-dim;
-  }
-  &:focus {
-    border-color: $kali-green;
-    outline: none;
-  }
+  background: transparent;
 }
 
 .filter-select {
   padding: 0.375rem 0.5rem;
-  border: 1px solid $kali-green-dim;
-  border-radius: 0;
+  border: 1px solid #555;
+  border-radius: 4px;
   font-size: 0.875rem;
-  background: #000 !important;
-  color: $kali-green !important;
-  font-family: $kali-font;
-  &:focus {
-    border-color: $kali-green;
-    outline: none;
-  }
+  background: #2d2d2d;
+  color: #eaeaea;
 }
 
+// Dark headings — targeting the correct wrapper class with a strong visible color
+.page__content h1,
+.page__content h2,
+.page__content h3,
+.page__content h4 {
+  color: #00bcd4;
+}
+
+// Select/option dark mode — ensure dropdowns render dark everywhere
 select,
 select option,
 .filter-select,
 .filter-select option {
-  background-color: #000 !important;
-  color: $kali-green !important;
+  background-color: #2d2d2d !important;
+  color: #eaeaea !important;
 }
 
+// Page centering — MM's .page uses float:right + asymmetric width calc.
+// When there's no sidebar (classes: wide), this causes a left offset.
+.wide .page {
+  width: 100%;
+  float: none;
+  padding-right: 0;
+}
+
+// ==========================================================================
+// Writeup cards — redesigned listing
+// ==========================================================================
+
 .writeup-card {
-  border: 1px solid $kali-green-dim;
-  border-radius: 0;
+  border: 1px solid #444;
+  border-radius: 8px;
   padding: 1.2em;
   margin-bottom: 1em;
-  background: $kali-bg-card;
-  transition: border-color 0.2s, background 0.2s;
+  background: #1e1e1e;
+  transition: border-color 0.2s;
 }
 
 .writeup-card:hover {
-  border-color: $kali-green;
-  background: $kali-bg-hover;
+  border-color: #00bcd4;
 }
 
 .writeup-card__title {
   margin: 0 0 0.5em;
   font-size: 1.2em;
-  font-family: $kali-font;
 }
 
 .writeup-card__title a {
-  color: $kali-green-bright !important;
+  color: #eaeaea;
   text-decoration: none;
-  &:hover {
-    color: $kali-cyan !important;
-  }
+}
+
+.writeup-card__title a:hover {
+  color: #00bcd4;
 }
 
 .writeup-card__meta {
@@ -346,37 +141,20 @@ select option,
 
 .writeup-card__tag {
   background: transparent;
-  border: 1px solid $kali-green-dim;
-  border-radius: 0;
+  border: 1px solid #555;
+  border-radius: 4px;
   padding: 2px 8px;
-  font-size: 0.75em;
-  color: $kali-text;
-  font-family: $kali-font;
+  font-size: 0.78em;
+  color: #ccc;
 }
-
-
 
 .writeup-card__date {
-  font-size: 0.7em;
-  color: $kali-text-dim;
+  font-size: 0.75em;
+  color: #888;
   white-space: nowrap;
-  font-family: $kali-font;
 }
 
-// ==========================================================================
-// PAGE CENTERING
-// ==========================================================================
-
-.wide .page {
-  width: 100%;
-  float: none;
-  padding-right: 0;
-}
-
-// ==========================================================================
-// HIDDEN ELEMENTS
-// ==========================================================================
-
+// Hide footer elements on writeup pages
 .page__date {
   display: none;
 }
@@ -384,48 +162,3 @@ select option,
 .pagination {
   display: none;
 }
-
-// ==========================================================================
-// FOOTER
-// ==========================================================================
-
-.page__footer {
-  background: $kali-bg !important;
-  border-top: 1px solid $kali-green-dim !important;
-  color: $kali-text-dim;
-  font-family: $kali-font;
-  font-size: 0.75em;
-}
-
-.page__footer a {
-  color: $kali-text;
-  &:hover {
-    color: $kali-green-bright;
-  }
-}
-
-.page__footer-follow {
-  // Hide social icons that don't fit the theme
-  display: none;
-}
-
-// ==========================================================================
-// SCROLLBAR
-// ==========================================================================
-
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  background: $kali-bg;
-}
-::-webkit-scrollbar-thumb {
-  background: $kali-green-dim;
-  border-radius: 0;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: $kali-green;
-}
-
-
