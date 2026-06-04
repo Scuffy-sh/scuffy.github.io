@@ -33,13 +33,16 @@ permalink: /writeups/
     </div>
     <div class="writeup-card__meta">
       <div class="writeup-card__tags">
-        <span class="writeup-card__tag">{{ writeup.difficulty }}</span>
-        <span class="writeup-card__tag">{{ writeup.operating_system }}</span>
         {% for tag in writeup.tags %}
+          {% unless tag == "HTB" or tag == writeup.difficulty or tag == writeup.operating_system %}
         <span class="writeup-card__tag">{{ tag }}</span>
+          {% endunless %}
         {% endfor %}
       </div>
-      <time class="writeup-card__date" datetime="{{ writeup.date | date_to_xmlschema }}">{{ writeup.date | date: "%d/%m/%Y" }}</time>
+      <div class="writeup-card__info-line">
+        <span class="writeup-card__meta-info">{{ writeup.difficulty }} · {{ writeup.operating_system }} · HTB</span>
+        <time class="writeup-card__date" datetime="{{ writeup.date | date_to_xmlschema }}">{{ writeup.date | date: "%d/%m/%Y" }}</time>
+      </div>
     </div>
   </article>
 {% endfor %}
