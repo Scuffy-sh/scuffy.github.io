@@ -168,11 +168,7 @@ Información obtenida de la respuesta:
 - **Token de Jupyter** visible en `ps aux`
 - OPSMCP corre como **root** en `/opt/opsmcp/server.py`
 
-El token de Jupyter que vimos en el listado de procesos fue:
-
-```
-[REDACTED]
-```
+El token de Jupyter que vimos en el listado de procesos fue: `[REDACTED]`. Ya tenemos el token de Jupyter para usar mas adelante.
 
 ---
 
@@ -277,8 +273,6 @@ Resultado:
 [REDACTED]
 ```
 
-**🚩 Flag de usuario: `[REDACTED]`**
-
 ---
 
 ## Escalada a root via OPSMCP hidden tools
@@ -342,8 +336,6 @@ id
 cat /root/root.txt
 # [REDACTED]
 ```
-
-**🚩 Flag de root: `[REDACTED]`**
 
 ---
 
