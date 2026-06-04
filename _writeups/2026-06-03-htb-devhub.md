@@ -168,8 +168,6 @@ Información obtenida de la respuesta:
 - **Token de Jupyter** visible en `ps aux`
 - OPSMCP corre como **root** en `/opt/opsmcp/server.py`
 
-El token de Jupyter que vimos en el listado de procesos fue: `[REDACTED]`. Ya tenemos el token de Jupyter para usar mas adelante.
-
 ---
 
 ## RCE como analyst via Jupyter WebSocket
