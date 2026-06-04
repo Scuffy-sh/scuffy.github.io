@@ -40,7 +40,7 @@ permalink: /writeups/
         {% endfor %}
       </div>
       <div class="writeup-card__info-line">
-        <span class="writeup-card__meta-info">{{ writeup.difficulty }} · {{ writeup.operating_system }} · HTB</span>
+        <span class="writeup-card__meta-info">{{ writeup.difficulty }} · {{ writeup.operating_system }} · HackTheBox</span>
         <time class="writeup-card__date" datetime="{{ writeup.date | date_to_xmlschema }}">{{ writeup.date | date: "%d/%m/%Y" }}</time>
       </div>
     </div>
