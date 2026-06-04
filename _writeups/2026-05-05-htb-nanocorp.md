@@ -3,7 +3,7 @@ layout: single
 classes: wide
 title: "NanoCorp - Writeup"
 date: 2026-05-05
-difficulty: Hard
+difficulty: Difícil
 operating_system: Windows
 service_hint: Active Directory + NTLM Relay + Checkmk + MSI Repair
 tags:
@@ -23,7 +23,7 @@ summary: "Cadena de explotaciÃ³n: NTLM relay vÃ­a CVE-2025-24054 para compro
 | Campo | Valor |
 |-------|-------|
 | Sistema operativo | Windows |
-| Dificultad | Hard |
+| Dificultad | Difícil |
 | Tags | `Active Directory`, `NTLM Relay`, `CVE-2025-24054`, `CVE-2024-0670`, `BloodHound`, `Privilege Escalation`, `Checkmk`, `Responder` |
 {: .info-table}
 
@@ -468,4 +468,4 @@ Archivo .library-ms malicioso + CVE-2025-24054
 
 ## ConclusiÃ³n
 
-HTB NanoCorp es una mÃ¡quina de dificultad Hard que combina NTLM relay mediante CVE-2025-24054 con un archivo `.library-ms` malicioso para comprometer `web_svc`, enumeraciÃ³n de rutas de escalada con BloodHound para acceder a `monitoring_svc` mediante manipulaciÃ³n de grupos AD, y escalada a SYSTEM explotando CVE-2024-0670 en Checkmk Agent 2.1.0p10 mediante una reparaciÃ³n de MSI con payload `.cmd`. La lecciÃ³n principal es que los agentes de monitoreo y las relaciones de grupos en Active Directory pueden formar cadenas de ataque complejas que herramientas como BloodHound revelan eficazmente.
+HTB NanoCorp es una mÃ¡quina de dificultad Difícil que combina NTLM relay mediante CVE-2025-24054 con un archivo `.library-ms` malicioso para comprometer `web_svc`, enumeraciÃ³n de rutas de escalada con BloodHound para acceder a `monitoring_svc` mediante manipulaciÃ³n de grupos AD, y escalada a SYSTEM explotando CVE-2024-0670 en Checkmk Agent 2.1.0p10 mediante una reparaciÃ³n de MSI con payload `.cmd`. La lecciÃ³n principal es que los agentes de monitoreo y las relaciones de grupos en Active Directory pueden formar cadenas de ataque complejas que herramientas como BloodHound revelan eficazmente.

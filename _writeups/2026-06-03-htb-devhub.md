@@ -3,12 +3,12 @@ layout: single
 classes: wide
 title: "DevHub - Writeup"
 date: 2026-06-03
-difficulty: Media
+difficulty: Medio
 operating_system: Linux
 tags:
   - HTB
   - Linux
-  - Media
+  - Medio
   - MCPJam
   - SSRF
   - Jupyter
@@ -24,7 +24,7 @@ summary: "ExplotaciÃ³n de MCPJam Inspector expuesto en puerto 6274 para ejecut
 | Campo | Valor |
 |-------|-------|
 | Sistema operativo | Linux |
-| Dificultad | Media |
+| Dificultad | Medio |
 | IP | `[REDACTED]` |
 | Tags | `MCPJam`, `SSRF`, `Jupyter`, `WebSocket`, `OPSMCP`, `Hidden Tools` |
 {: .info-table}
