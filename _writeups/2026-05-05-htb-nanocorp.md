@@ -425,7 +425,7 @@ Con control total del sistema, leemos la flag final desde el escritorio del Admi
 ```bash
 C:\Users\Administrator\Desktop>type root.txt
 type root.txt
-df398fa317da91fe096884185fc2edab
+[REDACTED]
 ```
 
 ## Cadena de explotación
@@ -449,7 +449,7 @@ Archivo .library-ms malicioso + CVE-2025-24054
 | Flag | Valor |
 |------|-------|
 | `user.txt` | `[REDACTED]` |
-| `root.txt` | `df398fa317da91fe096884185fc2edab` |
+| `root.txt` | `[REDACTED]` |
 
 ## Lecciones técnicas
 
