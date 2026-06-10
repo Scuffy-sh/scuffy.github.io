@@ -1,6 +1,7 @@
 ---
 layout: single
 title: Inicio
+seo_title: Portafolio
 author_profile: false
 ---
 
