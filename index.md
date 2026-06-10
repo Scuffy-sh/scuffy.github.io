@@ -16,7 +16,7 @@ En el apartado de Proyectos, se incluyen implementaciones de modelos de Machine 
 
 ---
 
-### [<img src="/images/scuffy-logo.jpg" style="height:24px;vertical-align:middle;margin-right:8px;border-radius:50%" alt="Scuffy"> Writeups - Hacking Ético](/writeups/)
+### [<img src="/images/icono_hacking.png" style="height:24px;vertical-align:middle;margin-right:8px;border-radius:50%" alt="Hacking"> Writeups - Hacking Ético](/writeups/)
 
 En el apartado de Hacking, se presentan WriteUps detallados de máquinas tipo CTF (Capture The Flag) comprometidas, documentando el proceso de enumeración, explotación y escalada de privilegios, con el objetivo de reflejar el enfoque metodológico en ciberseguridad ofensiva.
 
