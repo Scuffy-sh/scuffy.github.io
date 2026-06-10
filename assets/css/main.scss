@@ -168,6 +168,14 @@ select option,
   white-space: nowrap;
 }
 
+// ==========================================================================
+// Round images — masthead logo
+// ==========================================================================
+
+.site-logo img {
+  border-radius: 50%;
+}
+
 // Hide footer elements on writeup pages
 .page__date {
   display: none;
