@@ -169,17 +169,12 @@ select option,
 }
 
 // ==========================================================================
-// Round images — masthead logo and section icons with edge blend
+// Round images — masthead logo with edge blend
 // ==========================================================================
 
 .site-logo img {
   border-radius: 50%;
   border: 2px solid rgba(37, 42, 52, 0.55);
-}
-
-.page__content h3 a > img {
-  border-radius: 50%;
-  border: 1px solid rgba(37, 42, 52, 0.5);
 }
 
 // Hide footer elements on writeup pages
